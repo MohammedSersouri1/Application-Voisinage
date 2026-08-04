@@ -53,6 +53,8 @@ class Activity {
 
   bool get isFull => participantsCount >= maxParticipants;
 
+  bool isOwnedBy(String userId) => creatorId == userId;
+
   factory Activity.fromMap(Map<String, dynamic> map, {String? currentUserId}) {
     final participants =
         (map['activity_participants'] as List<dynamic>? ?? const []);

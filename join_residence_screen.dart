@@ -1,72 +1,62 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../models/user_profile.dart';
 import '../../services/app_session.dart';
 import '../../services/auth_service.dart';
-import 'edit_profile_screen.dart';
+import '../auth/sign_in_screen.dart';
+import '../home/main_nav_screen.dart';
+import '../onboarding/join_residence_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+/// Décide de l'écran à afficher : connexion, rejoindre sa résidence, ou
+/// l'application principale. Se reconstruit automatiquement à chaque
+/// changement d'état d'authentification Supabase (connexion/déconnexion).
+class AuthGate extends StatefulWidget {
+  const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  final _authService = AuthService();
 
   @override
   Widget build(BuildContext context) {
-    final profile = AppSession.profile!;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Mon profil')),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            CircleAvatar(
-              radius: 40,
-              child: Text(
-                profile.firstName.isNotEmpty ? profile.firstName[0] : '?',
-                style: const TextStyle(fontSize: 32),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              profile.fullName,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            if (profile.jobTitle != null)
-              Text('💼 ${profile.jobTitle}', textAlign: TextAlign.center),
-            if (profile.sports.isNotEmpty)
-              Text(
-                '⚽ ${profile.sports.join(' / ')}',
-                textAlign: TextAlign.center,
-              ),
-            if (profile.languages.isNotEmpty)
-              Text(profile.languages.join(' · '), textAlign: TextAlign.center),
-            if (profile.bio != null) ...[
-              const SizedBox(height: 12),
-              Text(profile.bio!, textAlign: TextAlign.center),
-            ],
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: () async {
-                await Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-                );
-              },
-              child: const Text('Modifier mon profil'),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: () async {
-                await AuthService().signOut();
-                // AuthGate (racine de l'app) réagit à onAuthStateChange et
-                // affichera l'écran de connexion, mais seulement une fois
-                // cette route (poussée par-dessus) retirée de la pile.
-                if (context.mounted) {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                }
-              },
-              child: const Text('Se déconnecter'),
-            ),
-          ],
-        ),
-      ),
+    return StreamBuilder<AuthState>(
+      stream: _authService.onAuthStateChange,
+      builder: (context, snapshot) {
+        final session = _authService.currentSession;
+        if (session == null) {
+          return const SignInScreen();
+        }
+        return FutureBuilder<UserProfile?>(
+          future: _authService.fetchCurrentProfile(),
+          builder: (context, profileSnapshot) {
+            if (profileSnapshot.connectionState != ConnectionState.done) {
+              return const _LoadingScreen();
+            }
+            final profile = profileSnapshot.data;
+            if (profile == null) {
+              return const _LoadingScreen();
+            }
+            AppSession.profile = profile;
+            if (profile.residenceId == null) {
+              return const JoinResidenceScreen();
+            }
+            return const MainNavScreen();
+          },
+        );
+      },
     );
+  }
+}
+
+class _LoadingScreen extends StatelessWidget {
+  const _LoadingScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }

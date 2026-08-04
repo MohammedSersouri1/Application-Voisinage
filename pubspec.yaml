@@ -1,0 +1,183 @@
+import 'package:flutter/material.dart';
+
+import '../../models/activity.dart';
+import '../../services/activity_service.dart';
+import '../../services/app_session.dart';
+import '../../utils/date_utils.dart';
+
+class CreateActivityScreen extends StatefulWidget {
+  const CreateActivityScreen({super.key});
+
+  @override
+  State<CreateActivityScreen> createState() => _CreateActivityScreenState();
+}
+
+class _CreateActivityScreenState extends State<CreateActivityScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _maxParticipantsController = TextEditingController(text: '10');
+  String _sportType = kSportTypes.first;
+  DateTime _date = DateTime.now().add(const Duration(days: 1));
+  TimeOfDay _time = const TimeOfDay(hour: 10, minute: 0);
+  bool _loading = false;
+  String? _error;
+
+  DateTime get _startsAt =>
+      DateTime(_date.year, _date.month, _date.day, _time.hour, _time.minute);
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _locationController.dispose();
+    _descriptionController.dispose();
+    _maxParticipantsController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (date != null) setState(() => _date = date);
+  }
+
+  Future<void> _pickTime() async {
+    final time = await showTimePicker(context: context, initialTime: _time);
+    if (time != null) setState(() => _time = time);
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final profile = AppSession.profile!;
+      await ActivityService().createActivity(
+        residenceId: profile.residenceId!,
+        creatorId: profile.id,
+        sportType: _sportType,
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+        location: _locationController.text.trim().isEmpty
+            ? null
+            : _locationController.text.trim(),
+        startsAt: _startsAt,
+        maxParticipants: int.parse(_maxParticipantsController.text),
+      );
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Nouvelle activité')),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: _sportType,
+                  decoration: const InputDecoration(labelText: 'Type'),
+                  items: kSportTypes
+                      .map((s) => DropdownMenuItem(
+                            value: s,
+                            child: Text(kSportLabels[s] ?? s),
+                          ))
+                      .toList(),
+                  onChanged: (v) => setState(() => _sportType = v ?? _sportType),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(labelText: 'Titre'),
+                  validator: (v) => (v == null || v.isEmpty) ? 'Requis' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _locationController,
+                  decoration: const InputDecoration(labelText: 'Lieu'),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description (optionnel)',
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _maxParticipantsController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre max de participants',
+                  ),
+                  validator: (v) {
+                    final n = int.tryParse(v ?? '');
+                    return (n == null || n <= 0) ? 'Nombre invalide' : null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Date'),
+                        subtitle: Text(formatDate(_date)),
+                        trailing: const Icon(Icons.edit_calendar),
+                        onTap: _pickDate,
+                      ),
+                    ),
+                    Expanded(
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Heure'),
+                        subtitle: Text(_time.format(context)),
+                        trailing: const Icon(Icons.access_time),
+                        onTap: _pickTime,
+                      ),
+                    ),
+                  ],
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 8),
+                  Text(_error!, style: const TextStyle(color: Colors.red)),
+                ],
+                const SizedBox(height: 20),
+                FilledButton(
+                  onPressed: _loading ? null : _submit,
+                  child: _loading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Créer'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

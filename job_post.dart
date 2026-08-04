@@ -1,58 +1,45 @@
-class UserProfile {
-  final String id;
-  final String authId;
-  final String firstName;
-  final String lastName;
-  final String email;
-  final String? phone;
-  final String? avatarUrl;
-  final String? jobTitle;
-  final String? bio;
-  final List<String> languages;
-  final List<String> sports;
-  final String? residenceId;
-  final String? apartmentNumber;
-  final String residenceStatus;
+const Map<String, String> kAnnouncementLabels = {
+  'urgent': '🔴 Urgent',
+  'maintenance': '🛗 Maintenance',
+  'general': 'ℹ️ Général',
+};
 
-  const UserProfile({
+class Announcement {
+  final String id;
+  final String residenceId;
+  final String authorId;
+  final String authorName;
+  final String type; // urgent | maintenance | general
+  final String title;
+  final String? body;
+  final DateTime startsAt;
+  final DateTime? endsAt;
+
+  const Announcement({
     required this.id,
-    required this.authId,
-    required this.firstName,
-    required this.lastName,
-    required this.email,
-    this.phone,
-    this.avatarUrl,
-    this.jobTitle,
-    this.bio,
-    this.languages = const [],
-    this.sports = const [],
-    this.residenceId,
-    this.apartmentNumber,
-    this.residenceStatus = 'pending',
+    required this.residenceId,
+    required this.authorId,
+    required this.authorName,
+    required this.type,
+    required this.title,
+    this.body,
+    required this.startsAt,
+    this.endsAt,
   });
 
-  String get fullName => '$firstName $lastName';
-
-  factory UserProfile.fromMap(Map<String, dynamic> map) {
-    return UserProfile(
+  factory Announcement.fromMap(Map<String, dynamic> map) {
+    return Announcement(
       id: map['id'] as String,
-      authId: map['auth_id'] as String,
-      firstName: map['first_name'] as String? ?? '',
-      lastName: map['last_name'] as String? ?? '',
-      email: map['email'] as String? ?? '',
-      phone: map['phone'] as String?,
-      avatarUrl: map['avatar_url'] as String?,
-      jobTitle: map['job_title'] as String?,
-      bio: map['bio'] as String?,
-      languages: (map['languages'] as List<dynamic>? ?? const [])
-          .map((e) => e.toString())
-          .toList(),
-      sports: (map['sports'] as List<dynamic>? ?? const [])
-          .map((e) => e.toString())
-          .toList(),
-      residenceId: map['residence_id'] as String?,
-      apartmentNumber: map['apartment_number'] as String?,
-      residenceStatus: map['residence_status'] as String? ?? 'pending',
+      residenceId: map['residence_id'] as String,
+      authorId: map['author_id'] as String,
+      authorName: map['author_name'] as String? ?? 'Un voisin',
+      type: map['type'] as String,
+      title: map['title'] as String,
+      body: map['body'] as String?,
+      startsAt: DateTime.parse(map['starts_at'] as String),
+      endsAt: map['ends_at'] != null
+          ? DateTime.parse(map['ends_at'] as String)
+          : null,
     );
   }
 }

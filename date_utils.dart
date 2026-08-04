@@ -1,42 +1,47 @@
-const Map<String, String> kAnnouncementLabels = {
-  'urgent': '🔴 Urgent',
-  'maintenance': '🛗 Maintenance',
-  'general': 'ℹ️ Général',
+const Map<String, String> kHelpCategories = {
+  'service_ponctuel': '📦 Service ponctuel',
+  'bon_plan': '🔧 Bon plan / recommandation',
+  'garde': '🐶 Garde (enfants, animaux)',
+  'bricolage': '🛠️ Bricolage',
+  'autre': '🙂 Autre',
 };
 
-class Announcement {
+class HelpRequest {
   final String id;
   final String residenceId;
-  final String authorId;
-  final String type; // urgent | maintenance | general
+  final String creatorId;
+  final String direction; // demande | proposition
+  final String category;
   final String title;
-  final String? body;
-  final DateTime startsAt;
-  final DateTime? endsAt;
+  final String? description;
+  final DateTime? neededAt;
+  final String status;
 
-  const Announcement({
+  const HelpRequest({
     required this.id,
     required this.residenceId,
-    required this.authorId,
-    required this.type,
+    required this.creatorId,
+    required this.direction,
+    required this.category,
     required this.title,
-    this.body,
-    required this.startsAt,
-    this.endsAt,
+    this.description,
+    this.neededAt,
+    required this.status,
   });
 
-  factory Announcement.fromMap(Map<String, dynamic> map) {
-    return Announcement(
+  factory HelpRequest.fromMap(Map<String, dynamic> map) {
+    return HelpRequest(
       id: map['id'] as String,
       residenceId: map['residence_id'] as String,
-      authorId: map['author_id'] as String,
-      type: map['type'] as String,
+      creatorId: map['creator_id'] as String,
+      direction: map['direction'] as String,
+      category: map['category'] as String,
       title: map['title'] as String,
-      body: map['body'] as String?,
-      startsAt: DateTime.parse(map['starts_at'] as String),
-      endsAt: map['ends_at'] != null
-          ? DateTime.parse(map['ends_at'] as String)
+      description: map['description'] as String?,
+      neededAt: map['needed_at'] != null
+          ? DateTime.parse(map['needed_at'] as String)
           : null,
+      status: map['status'] as String,
     );
   }
 }

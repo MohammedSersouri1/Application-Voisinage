@@ -1,47 +1,50 @@
-const Map<String, String> kHelpCategories = {
-  'service_ponctuel': '📦 Service ponctuel',
-  'bon_plan': '🔧 Bon plan / recommandation',
-  'garde': '🐶 Garde (enfants, animaux)',
-  'bricolage': '🛠️ Bricolage',
-  'autre': '🙂 Autre',
-};
-
-class HelpRequest {
+class Conversation {
   final String id;
   final String residenceId;
-  final String creatorId;
-  final String direction; // demande | proposition
-  final String category;
-  final String title;
-  final String? description;
-  final DateTime? neededAt;
-  final String status;
+  final String userAId;
+  final String userBId;
 
-  const HelpRequest({
+  const Conversation({
     required this.id,
     required this.residenceId,
-    required this.creatorId,
-    required this.direction,
-    required this.category,
-    required this.title,
-    this.description,
-    this.neededAt,
-    required this.status,
+    required this.userAId,
+    required this.userBId,
   });
 
-  factory HelpRequest.fromMap(Map<String, dynamic> map) {
-    return HelpRequest(
+  String otherUserId(String myId) => userAId == myId ? userBId : userAId;
+
+  factory Conversation.fromMap(Map<String, dynamic> map) {
+    return Conversation(
       id: map['id'] as String,
       residenceId: map['residence_id'] as String,
-      creatorId: map['creator_id'] as String,
-      direction: map['direction'] as String,
-      category: map['category'] as String,
-      title: map['title'] as String,
-      description: map['description'] as String?,
-      neededAt: map['needed_at'] != null
-          ? DateTime.parse(map['needed_at'] as String)
-          : null,
-      status: map['status'] as String,
+      userAId: map['user_a_id'] as String,
+      userBId: map['user_b_id'] as String,
+    );
+  }
+}
+
+class ChatMessage {
+  final String id;
+  final String conversationId;
+  final String senderId;
+  final String body;
+  final DateTime createdAt;
+
+  const ChatMessage({
+    required this.id,
+    required this.conversationId,
+    required this.senderId,
+    required this.body,
+    required this.createdAt,
+  });
+
+  factory ChatMessage.fromMap(Map<String, dynamic> map) {
+    return ChatMessage(
+      id: map['id'] as String,
+      conversationId: map['conversation_id'] as String,
+      senderId: map['sender_id'] as String,
+      body: map['body'] as String,
+      createdAt: DateTime.parse(map['created_at'] as String),
     );
   }
 }
